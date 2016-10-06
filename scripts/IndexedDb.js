@@ -237,7 +237,7 @@
         // displayActionFailure("No matching record found");
         return;
       }
-      deleteMethod(evt.target.result.id, store);
+      deleteMethod(evt.target.result.ChapterId, store);
     };
     req.onerror = function (evt) {
       console.error("deleteMethodFromBib:", evt.target.errorCode);
@@ -258,7 +258,7 @@
     // the result of the Object Store Deletion Operation algorithm is
     // undefined, so it's not possible to know if some records were actually
     // deleted by looking at the request result.
-    const req = store.get(key);
+    let req = store.get(key);
     req.onsuccess = function(evt) {
       const record = evt.target.result;
       console.log("record:", record);
@@ -276,7 +276,7 @@
         console.log("evt.target.result:", evt.target.result);
         console.log("delete successful");
         // displayActionSuccess("Deletion successful");
-        displayStoryList(store);
+        //displayStoryList(store);
       };
       req.onerror = function (evt) {
         console.error("deleteStory:", evt.target.errorCode);
