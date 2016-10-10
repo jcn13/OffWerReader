@@ -135,10 +135,9 @@
     }	   
      function listFilesFolder(folderName, parent, callback) 
    {
-        var request = gapi.client.drive.files.list(
-          
-          {
-            //'parents': [{"isRoot":true}],
+        var request = gapi.client.drive.files.list(          
+          { 
+            'q': "mimeType = 'application/vnd.google-apps.folder'"      
           });
           request.execute(function(resp)
           {
@@ -174,4 +173,5 @@
               count++;                         
             }  
           });                                    
-    }      
+    }
+    
