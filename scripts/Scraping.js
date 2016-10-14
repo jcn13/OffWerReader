@@ -70,8 +70,9 @@ function StartScrap(e) {
     var title = document.querySelector('#title');
 
     //if auth, if f1 => createStoryFolderGDrive
-    listFilesFolder(parsedInput.storyId, id, function(idc)
-    {
+    //listFilesFolder(parsedInput.storyId, id, function(idc)
+    
+    
         Story.name = parsedInput.storyName;
         title.textContent = Story.name;
         makeRequest('GET', yqlStringLinks).then(function(data) 
@@ -87,12 +88,12 @@ function StartScrap(e) {
             Story.href = parsedInput.href;
 
             populateChaptersSelectOptions();
-            populateChapters();
+            createStoryFolder(parsedInput.storyId);
 
         }).catch(function(err) {
             console.log('Request failed', err);
         })
-    });
+    
    
 }
 
@@ -112,7 +113,7 @@ function populateChaptersSelectOptions() {
 }
 
 function populateChapters() {
-    for (var i = 1; i <= 3; i++) {
+    for (var i = 1; i <= Story.chapters; i++) {
         const url = Story.parsedInput.hrefEmptyChapter + i,
             xpath = Story.parsedInput.xpathStory;
 
@@ -130,7 +131,7 @@ function populateChapters() {
                         "Content": data,
                         "NumberOfChapters": Story.chapters
                     };                    
-                    insertFile(nextStoryPath, idStory, obj);
+                    uploadChapter(obj, globalStoryFolderGoogleId);
             })
             .catch(function(err) {
                 console.log('Request failed', err);
