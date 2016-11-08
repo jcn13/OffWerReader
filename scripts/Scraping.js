@@ -10,10 +10,44 @@ const resultsAnchor = document.querySelector('#resultsAnchor');
 const nextChapterLink = document.querySelector('.next');
 const previousChapterLink = document.querySelector('.prev');
 
-let chaptersTotal = document.querySelector('#chapters-total');
+var chaptersTotal = document.querySelector('#chapters-total');
+var mobileNav = document.querySelector('#mobile-nav');
 
-let Story = {};
+const homebtn = document.querySelector('.home-btn');
+const aboutbtn = document.querySelector('.about-btn');
+aboutbtn.addEventListener('click', displayScreen.bind(this, 'about'));
+homebtn.addEventListener('click', displayScreen.bind(this, 'home'));
 
+function displayScreen(currentDisplay) {
+    const offreader = document.querySelector('.offreader');
+    const home = document.querySelector('.home');
+    const about = document.querySelector('.about');
+    offreader.style.display = 'none';
+    home.style.display = 'none';
+    about.style.display = 'none';
+
+    if (currentDisplay === 'about')
+        about.style.display = 'block';
+    else if (currentDisplay === 'home')
+        home.style.display = 'block';
+    else
+        offreader.style.display = 'block';
+}
+
+mobileNav.addEventListener('click', function(e) {
+    var sidebar = document.querySelector('.sidebar');
+    var navToggle = document.querySelector('.nav-toggle');
+
+    navToggle.classList.toggle("active");
+    var style = window.getComputedStyle(sidebar);
+    sidebar.style.display = style.display === 'none' ? 'block' : 'none';
+});
+
+inputScrape.addEventListener('focus', function(event){
+    this.value = "";
+}); //optionally clear on 'beforepaste'
+
+var Story = {};
 document.addEventListener("DOMContentLoaded", function(event) {
     openDb(function() {
         updateStoryList();
@@ -67,15 +101,12 @@ function StartScrap(e) {
     const parsedInput = parseUserInput(inputScrape.value, supportedSites);
     const yqlStringLinks = yqlStringBuilder(parsedInput.href, parsedInput.xpathLinks);
     const yqlStringChapters = new Set();
+    console.log(parsedInput);
     var title = document.querySelector('#title');
 
-    //if auth, if f1 => createStoryFolderGDrive
-    //listFilesFolder(parsedInput.storyId, id, function(idc)
-    
-    
         Story.name = parsedInput.storyName;
         title.textContent = Story.name;
-        makeRequest('GET', yqlStringLinks).then(function(data) 
+        makeRequest('GET', yqlStringLinks).then(function(data)
         {
             var numberOfChapters = (JSON.parse(data)).query.results.select[0].option.length;
             chaptersTotal.textContent = numberOfChapters;
@@ -88,28 +119,33 @@ function StartScrap(e) {
             Story.href = parsedInput.href;
 
             populateChaptersSelectOptions();
-            createStoryFolder(parsedInput.storyId);
+            populateChapters();
+            // createStoryFolder(parsedInput.storyId);
 
         }).catch(function(err) {
             console.log('Request failed', err);
-        })
-    
-   
+        });
 }
 
 function populateChaptersSelectOptions() {
-    var chaptersSelect = document.querySelector('#chapters-select');
-    for (var i = 1; i <= Story.chapters; i++) {
-        var opt = document.createElement("option");
-        opt.value = i;
-        opt.innerHTML = "Chapter: " + i;
+    const chaptersSelect = document.querySelector('#chapters-select');
+    const navigation = document.querySelector('.navigation');
+    chaptersSelect.innerHTML = "";
+    const optionHtml = document.createDocumentFragment();
+    for (let i = 1; i <= Story.chapters; i++) {
+        optionHtml.appendChild(new Option("Chapter: " + i, i));
 
-        chaptersSelect.appendChild(opt);
+        // chaptersSelect.appendChild(opt);
     }
-
+    // chaptersSelect.insertAdjacentHTML('afterbegin', optionHtml);
+    // const reader = document.querySelector('.reader');
+    // console.log(navigation.cloneNode(true));
+    // console.log(reader);
+    // reader.insertAdjacentElement('beforeend', navigation.cloneNode(true));
+    chaptersSelect.appendChild(optionHtml);
     chaptersSelect.addEventListener('change', function() {
         goToChapter(this.value);
-    })
+    });
 }
 
 function populateChapters() {
@@ -123,15 +159,15 @@ function populateChapters() {
                 addOrReplaceStory(nextStoryPath, Story.name, Story.href,
                     data, Story.chapters);
                 updateStoryList();
-                    //if f1, f2, auth => sendChapterObjectToGoogleDrive
-                    const obj = {
-                        "ChapterId": nextStoryPath,
-                        "StoryName": Story.name,
-                        "Url": Story.href,
-                        "Content": data,
-                        "NumberOfChapters": Story.chapters
-                    };                    
-                    uploadChapter(obj, globalStoryFolderGoogleId);
+                //if f1, f2, auth => sendChapterObjectToGoogleDrive
+                const obj = {
+                    "ChapterId": nextStoryPath,
+                    "StoryName": Story.name,
+                    "Url": Story.href,
+                    "Content": data,
+                    "NumberOfChapters": Story.chapters
+                };
+                // uploadChapter(obj, globalStoryFolderGoogleId);
             })
             .catch(function(err) {
                 console.log('Request failed', err);
@@ -139,6 +175,16 @@ function populateChapters() {
     }
 
     getCurrentChapter();
+}
+
+function closeMobileSidebar() {
+    var sidebar = document.querySelector('.sidebar');
+    var navToggle = document.querySelector('.nav-toggle');
+
+    if (navToggle.classList.contains('active')) {
+        navToggle.classList.remove("active");
+        sidebar.style.display = 'none';
+    }
 }
 
 function updateStoryList() {
@@ -156,6 +202,7 @@ function updateStoryList() {
         for (var i = storySelector.length - 1; i >= 0; i--) {
             storySelector[i].addEventListener('click', function(e) {
                 console.log(this.dataset.story);
+
                 var s = this.dataset.story;
 
                 Story.name = data[s].StoryName;
@@ -164,9 +211,13 @@ function updateStoryList() {
                 chaptersTotal.textContent = Story.chapters;
                 title.textContent = Story.name;
                 Story.currentChapter = 1;
+
+                closeMobileSidebar();
                 getCurrentChapter();
                 updateNav();
                 populateChaptersSelectOptions();
+
+                displayScreen();
             });
         }
     });
@@ -196,6 +247,10 @@ function getCurrentChapter() {
 const supportedSites = new Map([
     ["www.fanfiction.net", {
         xpathLinks: '//*[@id="chap_select"]',
+        xpathStory: '//*[@id="storytext"]'
+    }],
+    ["m.fanfiction.net", {
+        xpathLinks: '//*[@id="jump"]',
         xpathStory: '//*[@id="storytext"]',
         jsonNChapters: '.query.results.select[0].option.length'
     }],
